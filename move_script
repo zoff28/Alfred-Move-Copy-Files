@@ -45,6 +45,6 @@ if finderSelList ≠ {} then
 	end repeat
 end if
 if length of finderSelList > 1 then
-	return {"Your files", FolderName} as list
+	return {"your files", FolderName} as list
 end if
 return {FileName,FolderName} as list
