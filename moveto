@@ -1,0 +1,61 @@
+set DestinationPath to "{query}"
+set FolderPath to DestinationPath
+set FolderName to name of (info for FolderPath)
+
+#Handler declaration
+on splitText(theText, theDelimiter)
+	set AppleScript's text item delimiters to theDelimiter
+	set theTextItems to every text item of theText
+	set AppleScript's text item delimiters to ""
+	return theTextItems
+end splitText
+on convertListToString(theList, theDelimiter)
+	set AppleScript's text item delimiters to theDelimiter
+	set theString to theList as string
+	set AppleScript's text item delimiters to ""
+	return theString
+end convertListToString
+on pathcheck(theItem, theDelimiter)
+	set temp to splitText(theItem, theDelimiter)
+	repeat with i in temp
+		if i contains space then
+			set contents of i to "'" & i & "'"
+		end if
+	end repeat
+	set output to convertListToString(temp, theDelimiter)
+	return output
+end pathcheck
+
+#main program
+set MoveCount to 0 as integer
+set DestinationPath to pathcheck(DestinationPath, "/")
+tell application "Finder"
+	set finderSelList to selection as alias list
+end tell
+
+if finderSelList ≠ {} then
+	repeat with i in finderSelList
+		set contents of i to POSIX path of (contents of i)
+		set SourcePath to i as text
+		set SourcePath to pathcheck(SourcePath, "/")
+		set FileName to (name of (info for i))
+		set FileName to pathcheck(FileName, ".")
+		set CheckFile to DestinationPath & "/" & FileName
+		set CheckFile to POSIX file CheckFile
+		try
+			CheckFile as alias
+			set UserChoice to button returned of (display dialog "A newer item named \"" & FileName & "\" already exists in this location. Do you want to replace it with the older one you’re moving?" buttons {"Stop", "Replace"})
+			if (UserChoice = "Replace") then
+				set Out to " " & DestinationPath & "/" & FileName
+				do shell script "$(mv " & SourcePath & Out & ")"
+				set MoveCount to MoveCount + 1
+			end if
+		on error
+			set Out to " " & DestinationPath & "/" & FileName
+			do shell script "$(mv " & SourcePath & Out & ")"
+			set MoveCount to MoveCount + 1
+		end try
+	end repeat
+end if
+set MoveCount to MoveCount as string
+return {MoveCount, FileName, FolderName} as list
